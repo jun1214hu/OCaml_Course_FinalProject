@@ -71,12 +71,12 @@ let rec free_vars (exp : expr) : varidset =
   (* A set with only one element *)
   | Var v -> SS.singleton v
   (* Unops have variables only in e*)
-  | Unop (u, e) -> free_vars e
+  | Unop (_, e) -> free_vars e
   (* Binops have variables in both e1 and e2 *)
-  | Binop (b, e1, e2) -> SS.union(free_vars e1) (free_vars e2)
+  | Binop (_, e1, e2) -> SS.union(free_vars e1) (free_vars e2)
   (* Add all free variables for all conditions *)
   | Conditional (i, t, e) -> SS.union (free_vars e) 
-                             (SS.union(free vars i) (free_vars t))
+                             (SS.union(free_vars i) (free_vars t))
   (* Whatever variable is not defined *)
   | Fun (v, e) -> SS.diff (SS.singleton v) (free_vars e)
   (* Combine variables in e1 and e2 and add in the extra v*)
@@ -93,10 +93,8 @@ let rec free_vars (exp : expr) : varidset =
    they might accidentally be the same as a generated variable name.) *)
 let new_varname () : varid =
   let count = ref 0 in
-    fun () -> 
-      let var = "var" ^ string_of_int !count in 
-      count := !count + 1;
-      var ;;
+    "var" ^ string_of_int (count := !count + 1; !count)
+    ;;
 
 (*......................................................................
   Substitution 
@@ -119,7 +117,7 @@ let rec subst (var_name : varid) (repl : expr) (exp : expr) : expr =
     Binop (b, subst var_name repl e1, subst var_name repl e2)
   | Conditional (i, t, e) -> Conditional (subst var_name repl i,
                              subst var_name repl t, subst var_name repl e)
-  | Fun (v, e) -> if v = var_name then expl
+  | Fun (v, e) -> if v = var_name then exp
                   else Fun (v, subst var_name repl e)
   | Let (v, e1, e2) -> if v = var_name then 
                          Let (v, subst var_name repl e1, e2)
@@ -129,7 +127,7 @@ let rec subst (var_name : varid) (repl : expr) (exp : expr) : expr =
                           else 
                             Letrec (v, subst var_name repl e1, 
                                     subst var_name repl e2)
-  | App (e1, e2) -> App (subst var_name repl e1, subst var_name repl e2)
+  | App (e1, e2) -> App (subst var_name repl e1, subst var_name repl e2) ;;
 
 (*......................................................................
   String representations of expressions
@@ -147,7 +145,7 @@ let rec exp_to_concrete_string (exp : expr) : string =
   (* booleans *)
   | Bool b -> string_of_bool b    
   (* Unary operator *)
-  | Unop (u, e) -> "~(" ^ exp_to_concrete_string e ^ ")"
+  | Unop (_, e) -> "~(" ^ exp_to_concrete_string e ^ ")"
   (* binary operators*)
   | Binop (b, e1, e2) -> "(" ^ exp_to_concrete_string e1 ^      
     (match b with
@@ -171,6 +169,7 @@ let rec exp_to_concrete_string (exp : expr) : string =
   (* function applications*)
   | App (e1, e2) -> "Apply " ^ exp_to_concrete_string e1 
                     ^ " to " ^ exp_to_concrete_string e2
+;;
 
 (* exp_to_abstract_string : expr -> string
    Returns a string representation of the abstract syntax of the expr *)
@@ -183,7 +182,7 @@ let rec exp_to_abstract_string (exp : expr) : string =
   (* booleans *)
   | Bool b -> "Bool " ^ string_of_bool b    
   (* Unary operator *)
-  | Unop (u, e) -> "Unop (Negate, " ^ exp_to_abstract_string e ^ ")"
+  | Unop (_, e) -> "Unop (Negate, " ^ exp_to_abstract_string e ^ ")"
   (* binary operators*)
   | Binop (b, e1, e2) -> "Binop (" ^        
     (match b with
@@ -212,3 +211,5 @@ let rec exp_to_abstract_string (exp : expr) : string =
   (* function applications*)
   | App (e1, e2) -> "App (" ^ exp_to_abstract_string e1 
                     ^ ", " ^ exp_to_abstract_string e2 ^ ")"
+
+;;
