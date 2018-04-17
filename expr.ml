@@ -92,8 +92,39 @@ let subst (var_name : varid) (repl : expr) (exp : expr) : expr =
     
 (* exp_to_concrete_string : expr -> string
    Returns a concrete syntax string representation of the expr *)
-let exp_to_concrete_string (exp : expr) : string =
-  failwith "exp_to_concrete_string not implemented" ;;
+let rec exp_to_concrete_string (exp : expr) : string =
+  match exp with
+  (* variables *)
+  | Var v -> v    
+  (* integers *)
+  | Num n -> string_of_int n       
+  (* booleans *)
+  | Bool b -> string_of_bool b    
+  (* Unary operator *)
+  | Unop (u, e) -> "~(" ^ exp_to_concrete_string e ^ ")"
+  (* binary operators*)
+  | Binop (b, e1, e2) -> "(" ^ exp_to_concrete_string e1 ^      
+    (match b with
+      | Plus -> "+" ^ exp_to_concrete_string e2 ^ ")"
+      | Minus -> "-" ^ exp_to_concrete_string e2 ^ ")"
+      | Times -> "*" ^ exp_to_concrete_string e2 ^ ")"
+      | Equals -> "=" ^ exp_to_concrete_string e2 ^ ")"
+      | LessThan -> "<" ^ exp_to_concrete_string e2 ^ ")")
+  | Conditional (i, t, e) -> "If (" ^ exp_to_concrete_string i ^ ")" ^
+                             "Then (" ^ exp_to_concrete_string t ^ ")" ^
+                              "Else (" ^ exp_to_concrete_string e ^ ")" 
+  | Fun (v, e) -> v ^ " = " ^ exp_to_concrete_string e
+  | Let (v, e1, e2) -> "Let " ^ v ^ " = " ^ exp_to_concrete_string e1 
+                       ^ " in " ^ exp_to_concrete_string e2 
+  | Letrec (v, e1, e2) -> "Letrec " ^ v ^ " = " ^ exp_to_concrete_string e1 
+                       ^ " in " ^ exp_to_concrete_string e2 
+  (* exceptions *) 
+  | Raise -> "Raise"                               
+  (* (temporarily) unassigned *)
+  | Unassigned -> "Unassigned"                           
+  (* function applications*)
+  | App (e1, e2) -> "Apply " ^ exp_to_concrete_string e1 
+                    ^ " to " ^ exp_to_concrete_string e2
 
 (* exp_to_abstract_string : expr -> string
    Returns a string representation of the abstract syntax of the expr *)
