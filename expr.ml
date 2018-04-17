@@ -92,7 +92,11 @@ let rec free_vars (exp : expr) : varidset =
    gensym. Assumes no variable names use the prefix "var". (Otherwise,
    they might accidentally be the same as a generated variable name.) *)
 let new_varname () : varid =
-  failwith "new_varname not implemented" ;;
+  let count = ref 0 in
+    fun () -> 
+      let var = "var" ^ string_of_int !count in 
+      count := !count + 1;
+      var ;;
 
 (*......................................................................
   Substitution 
@@ -103,9 +107,29 @@ let new_varname () : varid =
  *)
 
 (* subst : varid -> expr -> expr -> expr
-   Substitute repl for free occurrences of var_name in exp *)
-let subst (var_name : varid) (repl : expr) (exp : expr) : expr =
-   ;;
+   Substitute repl for *free* occurrences of var_name in exp *)
+
+   (* HAVE TO TEST THIS OUT *)
+let rec subst (var_name : varid) (repl : expr) (exp : expr) : expr =
+  match exp with
+  | Num _ | Bool _ | Raise | Unassigned -> exp
+  | Var v -> if v = var_name then repl else exp
+  | Unop (u, e) -> Unop (u, subst var_name repl e)
+  | Binop (b, e1, e2) -> 
+    Binop (b, subst var_name repl e1, subst var_name repl e2)
+  | Conditional (i, t, e) -> Conditional (subst var_name repl i,
+                             subst var_name repl t, subst var_name repl e)
+  | Fun (v, e) -> if v = var_name then expl
+                  else Fun (v, subst var_name repl e)
+  | Let (v, e1, e2) -> if v = var_name then 
+                         Let (v, subst var_name repl e1, e2)
+                       else 
+                         Let (v, subst var_name repl e1, subst var_name repl e2)
+  | Letrec (v, e1, e2) -> if v = var_name then exp
+                          else 
+                            Letrec (v, subst var_name repl e1, 
+                                    subst var_name repl e2)
+  | App (e1, e2) -> App (subst var_name repl e1, subst var_name repl e2)
 
 (*......................................................................
   String representations of expressions
@@ -138,7 +162,7 @@ let rec exp_to_concrete_string (exp : expr) : string =
   | Fun (v, e) -> v ^ " = " ^ exp_to_concrete_string e
   | Let (v, e1, e2) -> "Let " ^ v ^ " = " ^ exp_to_concrete_string e1 
                        ^ " in " ^ exp_to_concrete_string e2 
-  | Letrec (v, e1, e2) -> "Letrec " ^ v ^ " = " ^ exp_to_concrete_string e1 
+  | Letrec (v, e1, e2) -> "Let rec " ^ v ^ " = " ^ exp_to_concrete_string e1 
                        ^ " in " ^ exp_to_concrete_string e2 
   (* exceptions *) 
   | Raise -> "Raise"                               
