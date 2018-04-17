@@ -60,10 +60,32 @@ let vars_of_list : string list -> varidset =
   SS.of_list ;;
   
 (* free_vars : expr -> varidset
-   Return a set of the variable names that are free in expression
+   Return a set of the variable names that are free?? in expression
    exp *)
-let free_vars (exp : expr) : varidset =
-  failwith "free_vars not implemented" ;;
+
+   (* NEED TO DO : TESTING *)
+let rec free_vars (exp : expr) : varidset =
+  match exp with
+  (* There are no variables *)
+  | Num _ | Bool _ | Raise | Unassigned -> SS.empty
+  (* A set with only one element *)
+  | Var v -> SS.singleton v
+  (* Unops have variables only in e*)
+  | Unop (u, e) -> free_vars e
+  (* Binops have variables in both e1 and e2 *)
+  | Binop (b, e1, e2) -> SS.union(free_vars e1) (free_vars e2)
+  (* Add all free variables for all conditions *)
+  | Conditional (i, t, e) -> SS.union (free_vars e) 
+                             (SS.union(free vars i) (free_vars t))
+  (* Whatever variable is not defined *)
+  | Fun (v, e) -> SS.diff (SS.singleton v) (free_vars e)
+  (* Combine variables in e1 and e2 and add in the extra v*)
+  | Let (v, e1, e2) -> SS.add v (SS.union (free_vars e1)(free_vars e2))
+  (* Combine variables in e1 and e2 and add in the extra v*)
+  | Letrec (v, e1, e2) -> SS.add v (SS.union (free_vars e1)(free_vars e2))
+  (* find free variables in both expressions *)
+  | App (e1, e2) -> SS.union (free_vars e1) (free_vars e2)
+   ;;
   
 (* new_varname : unit -> varid
    Return a fresh variable, constructed with a running counter a la
@@ -83,7 +105,7 @@ let new_varname () : varid =
 (* subst : varid -> expr -> expr -> expr
    Substitute repl for free occurrences of var_name in exp *)
 let subst (var_name : varid) (repl : expr) (exp : expr) : expr =
-  failwith "subst not implemented" ;;
+   ;;
 
 (*......................................................................
   String representations of expressions
