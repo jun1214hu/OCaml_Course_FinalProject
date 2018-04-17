@@ -97,5 +97,32 @@ let exp_to_concrete_string (exp : expr) : string =
 
 (* exp_to_abstract_string : expr -> string
    Returns a string representation of the abstract syntax of the expr *)
-let exp_to_abstract_string (exp : expr) : string =
-  failwith "exp_to_abstract_string not implemented" ;;
+let rec exp_to_abstract_string (exp : expr) : string =
+  match exp with
+  | Var v -> "Var %s" ^ v    (* variables *)
+  | Num n -> "Num " ^ string_of_int n       (* integers *)
+  | Bool b -> "Bool " ^ string_of_bool b    (* booleans *)
+  | Unop (u, e) -> "Unop (Negate, " ^ exp_to_abstract_string e ")"
+  | Binop (b, e1, e2) -> "Binop (" ^        (* binary operators*)
+    (match b with
+      | Plus -> "Plus (" ^ exp_to_abstract_string e1 ^ ", " 
+                         ^ exp_to_abstract_string e2 ^ ")"
+      | Minus -> "Minus (" ^ exp_to_abstract_string e1 ^ ", " 
+                         ^ exp_to_abstract_string e2 ^ ")"
+      | Times -> "Times (" ^ exp_to_abstract_string e1 ^ ", " 
+                         ^ exp_to_abstract_string e2 ^ ")"
+      | Equals -> "Equals (" ^ exp_to_abstract_string e1 ^ ", " 
+                         ^ exp_to_abstract_string e2 ^ ")"
+      | LessThan -> "LessThan (" ^ exp_to_abstract_string e1 ^ ", " 
+                         ^ exp_to_abstract_string e2 ^ ")")
+  | Conditional (i, t, e) -> "Conditional (" ^ exp_to_abstract_string i ^ ", "
+    ^ exp_to_abstract_string t ^ ", " ^ exp_to_abstract_string e ^ ")" 
+  | Fun (v, e) -> "Fun (" ^ v ^ ", " exp_to_abstract_string e ^ ")" 
+  | Let (v, e1, e2) -> "Let (" ^ v ^ ", " ^ exp_to_abstract_string e1 
+    ^ ", " ^ exp_to_abstract_string e2 ^ ")"           (* local naming *)
+  | Letrec (v, e1, e2) -> "Letrec (" ^ v ^ ", " ^ exp_to_abstract_string e1 
+    ^ ", " ^ exp_to_abstract_string e2 ^ ")"       (* recursive local naming *)
+  | Raise -> "Raise"                               (* exceptions *)
+  | Unassigned -> "Unassigned"                           (* (temporarily) unassigned *)
+  | App (e1, e2) -> "App (" ^ exp_to_abstract_string e1 
+    ^ ", " ^ exp_to_abstract_string e2 ^ ")"                 (* function applications *)
