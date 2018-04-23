@@ -94,13 +94,40 @@ let eval_t (exp : expr) (_env : Env.env) : Env.value =
   Env.Val exp ;;
 
 (* The SUBSTITUTION MODEL evaluator -- to be completed *)
+(* simplest bits of the language the to most complex*)
+(* TO DO - UNIT TESTS *)
    
-let eval_s (_exp : expr) (_env : Env.env) : Env.value =
-  failwith "eval_s not implemented" ;;
+let rec eval_s (exp : expr) (env : Env.env) : Env.value =
+  let rec eval (exp : expr) : expr =
+  match exp with
+  | Num _ | Bool _ | Raise | Unassigned -> Env.Val exp
+  | Var _ -> raise (EvalError "Variable cannot be evaluated")
+  | Unop (u, e) ->
+    (match u, (eval_s e env) with
+    | Negate, Env.Val (Num n) -> Env.Val (Num (~- n))
+    | _, _ -> raise EvalException)
+  | Binop (b, e1, e2) -> 
+    (match b, e1, e2 with
+    | Plus, Num a, Num b -> Env.Val (Num (a + b))
+    | Minus, Num a, Num b -> Env.Val (Num (a - b))
+    | Times, Num a, Num b -> Env.Val (Num (a * b))
+    | Equals, Num a, Num b -> Env.Val (Bool (a = b))
+    | LessThan, Num a, Num b -> Env.Val (Bool (a < b))
+    | _, _, _ -> raise EvalException)
+  | Conditional (i, t, e) -> if (eval_s i env) = Env.Val (Bool true) then 
+                             (eval_s t env) else eval_s e env
+  | Fun (_, _) -> Env.Val exp
+  | Let (v, e1, e2) -> eval_s (subst v (eval_s e1 env) e2) env
+  | Letrec (v, e1, e2) -> 
+      eval_s (subst v (subst v (Letrec (v, e1, Var v)) e1) e2) env
+  | App (e1, e2) -> 
+      (match eval_s e1 env with
+      | Fun (v, e) -> eval_s (subst v (eval_s e2 env) e))
+  | _ -> raise (EvalError "none of the conditions were met")
      
 (* The DYNAMICALLY-SCOPED ENVIRONMENT MODEL evaluator -- to be
    completed *)
-   
+
 let eval_d (_exp : expr) (_env : Env.env) : Env.value =
   failwith "eval_d not implemented" ;;
        
