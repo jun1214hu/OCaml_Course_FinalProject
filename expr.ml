@@ -58,6 +58,7 @@ let same_vars : varidset -> varidset -> bool =
    testing purposes) *)
 let vars_of_list : string list -> varidset =
   SS.of_list ;;
+
   
 (* free_vars : expr -> varidset
    Return a set of the variable names that are free?? in expression
@@ -73,16 +74,16 @@ let rec free_vars (exp : expr) : varidset =
   (* Unops have variables only in e*)
   | Unop (_, e) -> free_vars e
   (* Binops have variables in both e1 and e2 *)
-  | Binop (_, e1, e2) -> SS.union(free_vars e1) (free_vars e2)
+  | Binop (_, e1, e2) -> SS.union (free_vars e1) (free_vars e2)
   (* Add all free variables for all conditions *)
   | Conditional (i, t, e) -> SS.union (free_vars e) 
                              (SS.union(free_vars i) (free_vars t))
   (* Whatever variable is not defined *)
-  | Fun (v, e) -> SS.diff (SS.singleton v) (free_vars e)
+  | Fun (v, e) -> SS.diff (free_vars e) (SS.singleton v)
   (* Combine variables in e1 and e2 and add in the extra v*)
-  | Let (v, e1, e2) -> SS.add v (SS.union (free_vars e1)(free_vars e2))
+  | Let (v, e1, e2) -> SS.union (free_vars e1) (SS.diff (free_vars e2) (SS.singleton v))
   (* Combine variables in e1 and e2 and add in the extra v*)
-  | Letrec (v, e1, e2) -> SS.add v (SS.union (free_vars e1)(free_vars e2))
+  | Letrec (v, e1, e2) -> SS.diff (SS.union (free_vars e1)(free_vars e2)) (SS.singleton v)
   (* find free variables in both expressions *)
   | App (e1, e2) -> SS.union (free_vars e1) (free_vars e2)
    ;;
