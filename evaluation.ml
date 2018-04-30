@@ -45,27 +45,38 @@ module Env : Env_type =
 
     (* Creates a closure from an expression and the environment it's
        defined in *)
-    let close (exp : expr) (env : env) : value =
-      failwith "close not implemented" ;;
+    let close (exp : expr) (env : env) : value = Closure (exp, env) ;;
 
     (* Looks up the value of a variable in the environment *)
-    let lookup (env : env) (varname : varid) : value =
-      failwith "lookup not implemented" ;;
+    let lookup (env : env) (varname : varid) : value = 
+      match List.find (fun (v, _vref) -> v = varname) env with
+      | (vid, vref) -> !vref
+      | _ -> raise (EvalError "Not Found")
 
     (* Returns a new environment just like env except that it maps the
        variable varid to loc *)
     let extend (env : env) (varname : varid) (loc : value ref) : env =
-      failwith "extend not implemented" ;;
+      (varname, loc) :: env ;;
+
+    (* Returns a printable string representation of an environment *)
+    let rec env_to_string (env : env) : string =
+      match env with
+      | [] -> raise (EvalError "Empty environment")
+      | (vid, vref) :: t -> vid ^ env_to_string t 
 
     (* Returns a printable string representation of a value; the flag
        printenvp determines whether to include the environment in the
        string representation when called on a closure *)
     let value_to_string ?(printenvp : bool = true) (v : value) : string =
-      failwith "value_to_string not implemented" ;;
+      match v with
+      | Val e -> exp_to_concrete_string e
+      | Closure (e, env) -> if printenvp then 
+                            (exp_to_concrete_string e) ^ env_to_string env
+                            else exp_to_concrete_string e 
 
-    (* Returns a printable string representation of an environment *)
-    let env_to_string (env : env) : string =
-      failwith "env_to_string not implemented" ;;
+
+
+
   end
 ;;
 
@@ -95,35 +106,42 @@ let eval_t (exp : expr) (_env : Env.env) : Env.value =
 
 (* The SUBSTITUTION MODEL evaluator -- to be completed *)
 (* simplest bits of the language the to most complex*)
+
+
 (* TO DO - UNIT TESTS *)
    
-let rec eval_s (exp : expr) (env : Env.env) : Env.value =
+let eval_s (exp : expr) (_env : Env.env) : Env.value =
   let rec eval (exp : expr) : expr =
   match exp with
-  | Num _ | Bool _ | Raise | Unassigned -> Env.Val exp
+  | Num _ | Bool _ | Fun _ -> exp
+  | Raise -> raise (EvalError "Exception was raised")
+  | Unassigned -> raise (EvalError "Unassigned")
   | Var _ -> raise (EvalError "Variable cannot be evaluated")
   | Unop (u, e) ->
-    (match u, (eval_s e env) with
-    | Negate, Env.Val (Num n) -> Env.Val (Num (~- n))
-    | _, _ -> raise EvalException)
+    (match u, eval e with
+    | Negate, Num n -> Num (n * -1)
+    | Negate, _ -> raise (EvalError "Cannot negate a non-number")
+    | _ -> raise (EvalError "Invalid unop"))
   | Binop (b, e1, e2) -> 
     (match b, e1, e2 with
-    | Plus, Num a, Num b -> Env.Val (Num (a + b))
-    | Minus, Num a, Num b -> Env.Val (Num (a - b))
-    | Times, Num a, Num b -> Env.Val (Num (a * b))
-    | Equals, Num a, Num b -> Env.Val (Bool (a = b))
-    | LessThan, Num a, Num b -> Env.Val (Bool (a < b))
-    | _, _, _ -> raise EvalException)
-  | Conditional (i, t, e) -> if (eval_s i env) = Env.Val (Bool true) then 
-                             (eval_s t env) else eval_s e env
-  | Fun (_, _) -> Env.Val exp
-  | Let (v, e1, e2) -> eval_s (subst v (eval_s e1 env) e2) env
+    | Plus, Num a, Num b -> Num (a + b)
+    | Minus, Num a, Num b -> Num (a - b)
+    | Times, Num a, Num b -> Num (a * b)
+    | Equals, Num a, Num b -> Bool (a = b)
+    | Equals, Bool a, Bool b -> Bool (a = b)
+    | LessThan, Num a, Num b -> Bool (a < b)
+    | _ -> raise (EvalError "Invalid binop"))
+  | Conditional (i, t, e) -> if i = Bool true then eval t else eval e
+  | Let (v, e1, e2) -> let evaled1 = eval e1 in eval (subst v evaled1 e2)
   | Letrec (v, e1, e2) -> 
-      eval_s (subst v (subst v (Letrec (v, e1, Var v)) e1) e2) env
+      let evaled1 = eval (subst v (Letrec (v, e1, Var v)) e1) 
+      in eval (subst v evaled1 e2)
   | App (e1, e2) -> 
-      (match eval_s e1 env with
-      | Fun (v, e) -> eval_s (subst v (eval_s e2 env) e))
+      (match eval e1 with
+      | Fun (v, e) -> eval (subst v (eval e2) e)
+      | _ -> raise (EvalError "bad redex"))
   | _ -> raise (EvalError "none of the conditions were met")
+in Env.Val (eval exp)
      
 (* The DYNAMICALLY-SCOPED ENVIRONMENT MODEL evaluator -- to be
    completed *)
@@ -145,4 +163,4 @@ let eval_l (_exp : expr) (_env : Env.env) : Env.value =
    above, not the evaluate function, so it doesn't matter how it's set
    when you submit your solution.) *)
    
-let evaluate = eval_t ;;
+let evaluate = eval_s ;;

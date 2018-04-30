@@ -149,26 +149,25 @@ let rec exp_to_concrete_string (exp : expr) : string =
   (* binary operators*)
   | Binop (b, e1, e2) -> "(" ^ exp_to_concrete_string e1 ^      
     (match b with
-      | Plus -> "+" ^ exp_to_concrete_string e2 ^ ")"
-      | Minus -> "-" ^ exp_to_concrete_string e2 ^ ")"
-      | Times -> "*" ^ exp_to_concrete_string e2 ^ ")"
-      | Equals -> "=" ^ exp_to_concrete_string e2 ^ ")"
-      | LessThan -> "<" ^ exp_to_concrete_string e2 ^ ")")
-  | Conditional (i, t, e) -> "If (" ^ exp_to_concrete_string i ^ ")" ^
-                             "Then (" ^ exp_to_concrete_string t ^ ")" ^
-                              "Else (" ^ exp_to_concrete_string e ^ ")" 
-  | Fun (v, e) -> v ^ " = " ^ exp_to_concrete_string e
-  | Let (v, e1, e2) -> "Let " ^ v ^ " = " ^ exp_to_concrete_string e1 
+      | Plus -> " + " ^ exp_to_concrete_string e2 ^ ")"
+      | Minus -> " - " ^ exp_to_concrete_string e2 ^ ")"
+      | Times -> " * " ^ exp_to_concrete_string e2 ^ ")"
+      | Equals -> " = " ^ exp_to_concrete_string e2 ^ ")"
+      | LessThan -> " < " ^ exp_to_concrete_string e2 ^ ")")
+  | Conditional (i, t, e) -> "if (" ^ exp_to_concrete_string i ^ ")" ^
+                             " then (" ^ exp_to_concrete_string t ^ ")" ^
+                              " else (" ^ exp_to_concrete_string e ^ ")" 
+  | Fun (v, e) -> "fun " ^ v ^ " -> " ^ exp_to_concrete_string e
+  | Let (v, e1, e2) -> "let " ^ v ^ " = " ^ exp_to_concrete_string e1 
                        ^ " in " ^ exp_to_concrete_string e2 
-  | Letrec (v, e1, e2) -> "Let rec " ^ v ^ " = " ^ exp_to_concrete_string e1 
+  | Letrec (v, e1, e2) -> "let rec " ^ v ^ " = " ^ exp_to_concrete_string e1 
                        ^ " in " ^ exp_to_concrete_string e2 
   (* exceptions *) 
   | Raise -> "Raise"                               
   (* (temporarily) unassigned *)
   | Unassigned -> "Unassigned"                           
   (* function applications*)
-  | App (e1, e2) -> "Apply " ^ exp_to_concrete_string e1 
-                    ^ " to " ^ exp_to_concrete_string e2
+  | App (e1, e2) -> exp_to_concrete_string e1 ^ " " ^ exp_to_concrete_string e2
 ;;
 
 (* exp_to_abstract_string : expr -> string
@@ -176,30 +175,30 @@ let rec exp_to_concrete_string (exp : expr) : string =
 let rec exp_to_abstract_string (exp : expr) : string =
   match exp with
   (* variables *)
-  | Var v -> "Var " ^ v    
+  | Var v -> "Var(" ^ v ^ ")" 
   (* integers *)
-  | Num n -> "Num " ^ string_of_int n       
+  | Num n -> "Num(" ^ string_of_int n ^ ")"       
   (* booleans *)
-  | Bool b -> "Bool " ^ string_of_bool b    
+  | Bool b -> "Bool(" ^ string_of_bool b ^ ")"     
   (* Unary operator *)
   | Unop (_, e) -> "Unop (Negate, " ^ exp_to_abstract_string e ^ ")"
   (* binary operators*)
   | Binop (b, e1, e2) -> "Binop (" ^        
     (match b with
-      | Plus -> "Plus (" ^ exp_to_abstract_string e1 ^ ", " 
+      | Plus -> "Plus, " ^ exp_to_abstract_string e1 ^ ", " 
                          ^ exp_to_abstract_string e2 ^ "))"
-      | Minus -> "Minus (" ^ exp_to_abstract_string e1 ^ ", " 
+      | Minus -> "Minus, " ^ exp_to_abstract_string e1 ^ ", " 
                          ^ exp_to_abstract_string e2 ^ "))"
-      | Times -> "Times (" ^ exp_to_abstract_string e1 ^ ", " 
+      | Times -> "Times, " ^ exp_to_abstract_string e1 ^ ", " 
                          ^ exp_to_abstract_string e2 ^ "))"
-      | Equals -> "Equals (" ^ exp_to_abstract_string e1 ^ ", " 
+      | Equals -> "Equals, " ^ exp_to_abstract_string e1 ^ ", " 
                          ^ exp_to_abstract_string e2 ^ "))"
-      | LessThan -> "LessThan (" ^ exp_to_abstract_string e1 ^ ", " 
+      | LessThan -> "LessThan, " ^ exp_to_abstract_string e1 ^ ", " 
                          ^ exp_to_abstract_string e2 ^ "))")
-  | Conditional (i, t, e) -> "Conditional (" ^ exp_to_abstract_string i ^ ", "
+  | Conditional (i, t, e) -> "Conditional, " ^ exp_to_abstract_string i ^ ", "
                               ^ exp_to_abstract_string t ^ ", " 
                               ^ exp_to_abstract_string e ^ ")" 
-  | Fun (v, e) -> "Fun (, " ^ v ^ ", " ^ exp_to_abstract_string e ^ ")"
+  | Fun (v, e) -> "Fun (" ^ v ^ ", " ^ exp_to_abstract_string e ^ ")"
   | Let (v, e1, e2) -> "Let (" ^ v ^ ", " ^ exp_to_abstract_string e1 
                        ^ ", " ^ exp_to_abstract_string e2 ^ ")"
   | Letrec (v, e1, e2) -> "Letrec (" ^ v ^ ", " ^ exp_to_abstract_string e1 
@@ -211,5 +210,6 @@ let rec exp_to_abstract_string (exp : expr) : string =
   (* function applications*)
   | App (e1, e2) -> "App (" ^ exp_to_abstract_string e1 
                     ^ ", " ^ exp_to_abstract_string e2 ^ ")"
+  | _ -> "Eval Error"
 
 ;;
