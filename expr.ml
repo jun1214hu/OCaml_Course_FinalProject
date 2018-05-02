@@ -81,9 +81,11 @@ let rec free_vars (exp : expr) : varidset =
   (* Whatever variable is not defined *)
   | Fun (v, e) -> SS.diff (free_vars e) (SS.singleton v)
   (* Variables not defined in e2 and e1*)
-  | Let (v, e1, e2) -> SS.union (free_vars e1) (SS.diff (free_vars e2) (SS.singleton v))
+  | Let (v, e1, e2) -> SS.union (free_vars e1) 
+    (SS.diff (free_vars e2) (SS.singleton v))
   (* Combine variables in e1 and e2 and add in the extra v*)
-  | Letrec (v, e1, e2) -> SS.diff (SS.union (free_vars e1)(free_vars e2)) (SS.singleton v)
+  | Letrec (v, e1, e2) -> SS.diff (SS.union (free_vars e1)(free_vars e2))
+                          (SS.singleton v)
   (* find free variables in both expressions *)
   | App (e1, e2) -> SS.union (free_vars e1) (free_vars e2)
    ;;
