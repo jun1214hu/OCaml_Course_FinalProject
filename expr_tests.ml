@@ -39,6 +39,11 @@ let sublr2 = Letrec ("f", Fun ("x", Conditional (Binop
 	(Equals, Var "y", Num 0), Num 1, Binop (Times, Var "y", App 
 	(Var "f", Binop (Minus, Var "z", Num 1))))), App (Var "f", Num 4));;
 
+(* Environment for env testing *)
+let empty_env = Env.create ();;
+let x_env = Env.extend (Env.create ()) "x" (ref (Env.Val varx));;
+let y_env = Env.extend (Env.create ()) "y" (ref (Env.Val vary));;
+let xy_env = Env.extend x_env "y" (ref (Env.Val vary));;
 
 let _ =
 
@@ -84,13 +89,19 @@ assert (subst "x" num5 varx = subvarx);
 assert (subst "y" num4 varx = nosubvarx);
 assert (subst "x" num5 b2 = subb2);
 assert (subst "x" num4 f2 = subf2);
-assert (subst "y" num5 l2 = subl2) ;;
-assert (subst "x" num4 lr2 = sublr2);;
+assert (subst "y" num5 l2 = subl2) ;
+assert (subst "x" num4 lr2 = sublr2);
 
 (* eval_s testing *)
 
 
 (* Env module test *)
+assert (Env.close varx empty_env = Closure (varx, empty_env));
+assert not (Env.lookup empty_env "x" = Env.Val (Var "x"));
+assert (Env.lookup x_env "x" = Env.Val (Var "x"));
+assert not (Env.lookup y_env "x" = Env.Val (Var "x"));
+assert (Env.lookup y_env "y" = Env.Val (War "y"));;
+
 
 (* eval_d testing *)
 

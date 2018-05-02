@@ -41,28 +41,29 @@ module Env : Env_type =
        | Closure of (expr * env)
 
     (* Creates an empty environment *)
-    let create () : env = [] ;;
+    let create () : env = []
 
     (* Creates a closure from an expression and the environment it's
        defined in *)
-    let close (exp : expr) (env : env) : value = Closure (exp, env) ;;
+    let close (exp : expr) (env : env) : value = Closure (exp, env)
 
     (* Looks up the value of a variable in the environment *)
     let lookup (env : env) (varname : varid) : value = 
       match List.find (fun (v, _vref) -> v = varname) env with
       | (vid, vref) -> !vref
-      | _ -> raise (EvalError "Not Found")
+      | _ -> raise (EvalError "Not Found") 
 
     (* Returns a new environment just like env except that it maps the
        variable varid to loc *)
     let extend (env : env) (varname : varid) (loc : value ref) : env =
-      (varname, loc) :: env ;;
+      (varname, loc) :: env
 
     (* Returns a printable string representation of an environment *)
     let rec env_to_string (env : env) : string =
       match env with
-      | [] -> raise (EvalError "Empty environment")
-      | (vid, vref) :: t -> vid ^ env_to_string t 
+      | (vid, vref) :: t -> "(" ^ vid ^ ", ref)"  ^ env_to_string t
+      | [] -> "" 
+
 
     (* Returns a printable string representation of a value; the flag
        printenvp determines whether to include the environment in the
