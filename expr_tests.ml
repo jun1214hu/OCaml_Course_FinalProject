@@ -101,6 +101,8 @@ assert not (Env.lookup empty_env "x" = Env.Val (Var "x"));
 assert (Env.lookup x_env "x" = Env.Val (Var "x"));
 assert not (Env.lookup y_env "x" = Env.Val (Var "x"));
 assert (Env.lookup y_env "y" = Env.Val (War "y"));;
+assert (Env.env_to_string xy_env = "(x, ref)(y, ref)")
+assert (Env.env_to_string empty_env = "")
 
 
 (* eval_d testing *)

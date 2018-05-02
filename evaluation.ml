@@ -173,7 +173,7 @@ let eval_d (exp : expr) (env : Env.env) : Env.value =
     | _ -> raise (EvalError "Invalid unop"))
   (* should not be different from sub*)
   | Binop (b, e1, e2) -> 
-    (match b, e1, e2 with
+    (match b, eval e1 env, eval e2 env with
     | Plus, Num a, Num b -> Num (a + b)
     | Minus, Num a, Num b -> Num (a - b)
     | Times, Num a, Num b -> Num (a * b)
@@ -210,40 +210,38 @@ in Env.Val (eval exp env) ;;
 (* The LEXICALLY-SCOPED ENVIRONMENT MODEL evaluator -- optionally
    completed as (part of) your extension *)
    
-let eval_l (exp : expr) (env : Env.env) : Env.value =
- let rec eval (exp : expr) (env : Env.env) : expr =
+let rec eval_l (exp : expr) (env : Env.env) : Env.value =
   match exp with
-  | Num _ | Bool _ -> exp
+  | Num _ | Bool _ -> Env.Closure (exp, env)
   | Raise -> raise (EvalError "Exception was raised")
   | Unassigned -> raise (EvalError "Unassigned")
   (* The variable may be defined in the environment *)
-  | Var v -> 
-      (match Env.lookup env v with
-      | Env.Val e -> e
-      | _ -> raise (EvalError "Variable is undefined"))
+  | Var v -> Env.lookup env v
   (* should not be different from sub*)
   | Unop (u, e) ->
-    (match u, eval e env with
-    | Negate, Num n -> Num (n * -1)
+    (match u, eval_l e env with
+    | Negate, Env.Val (Num n) -> Env.Val (Num (n * -1))
     | Negate, _ -> raise (EvalError "Cannot negate a non-number")
     | _ -> raise (EvalError "Invalid unop"))
   (* should not be different from sub*)
   | Binop (b, e1, e2) -> 
-    (match b, e1, e2 with
-    | Plus, Num a, Num b -> Num (a + b)
-    | Minus, Num a, Num b -> Num (a - b)
-    | Times, Num a, Num b -> Num (a * b)
-    | Equals, Num a, Num b -> Bool (a = b)
-    | Equals, Bool a, Bool b -> Bool (a = b)
-    | LessThan, Num a, Num b -> Bool (a < b)
-    | _, Num _, Num _ | _, Bool _, Bool _ -> 
+    (match b, eval_l e1 env, eval_l e2 env with
+    | Plus, Env.Val (Num a), Env.Val (Num b) -> Env.Val (Num (a + b))
+    | Minus, Env.Val (Num a), Env.Val (Num b) -> Env.Val (Num (a - b))
+    | Times, Env.Val (Num a), Env.Val (Num b) -> Env.Val (Num (a * b))
+    | Equals, Env.Val (Num a), Env.Val (Num b) -> Env.Val (Bool (a = b))
+    | Equals, Env.Val (Bool a), Env.Val (Bool b) -> Env.Val (Bool (a = b))
+    | LessThan, Env.Val (Num a), Env.Val (Num b) -> Env.Val (Bool (a < b))
+    | _, Env.Val (Num _), Env.Val (Num _) 
+    | _, Env.Val (Bool _), Env.Val (Bool _) -> 
         raise (EvalError "Invalid operator")
     | _ -> raise (EvalError "Invalid expressions for binop"))
   (* should not be different from sub*)
-  | Conditional (i, t, e) -> if i = Bool true then eval t env else eval e env
+  | Conditional (i, t, e) -> if i = Bool true then 
+                             eval_l t env else eval_l e env
   | Let (v, e1, e2) -> 
   (* add the variable to the environment and evaluate against e2 *)
-      eval e2 (Env.extend env v (ref (Env.Val (eval e1 env))))
+      eval_l e2 (Env.extend env v (ref (eval_l e1 env)))
   | Letrec (v, e1, e2) -> 
       (* in the interim, store a special value *)
       let interim_var = ref (Env.Val Unassigned) in
@@ -251,21 +249,22 @@ let eval_l (exp : expr) (env : Env.env) : Env.value =
       (* make sure it's the value not variable name *)
       let new_env = Env.extend env v interim_var in 
       (* evaluate e1 in the new environment *)
-      let new_e1 = eval e1 new_env in 
+      let new_e1 = eval_l e1 new_env in 
       (* then update to the final environment that e2 will be evaluated against *)
       let final_env = Env.extend new_env v interim_var in
-      eval e2 final_env
+      interim_var := new_e1;
+      eval_l e2 final_env
   | App (e1, e2) -> 
-      (match Env.Val (eval e1 env) with
+      (match eval_l e1 env with
       (* must extend the environment again *)
       | Env.Closure (Fun (v, e), close_env) -> 
-          eval e (Env.extend close_env v (ref (Env.Val (eval e2 env))))
-      | _ -> raise (EvalError "bad redex"))
+          eval_l e (Env.extend close_env v (ref (eval_l e2 env)))
+      | _ -> raise (EvalError "Not a closure"))
   (* modify the code so that the evulation returns a closure containing
   the function and the current environment *)
-  | Fun (v, e) -> exp
+  | Fun (v, e) -> Env.Closure (e, env)
   | _ -> raise (EvalError "none of the conditions were met")
-in Env.Val (eval exp env)  ;;
+
 
 (* Connecting the evaluators to the external world. The REPL in
    miniml.ml uses a call to the single function evaluate defined
@@ -275,4 +274,4 @@ in Env.Val (eval exp env)  ;;
    above, not the evaluate function, so it doesn't matter how it's set
    when you submit your solution.) *)
    
-let evaluate = eval_l ;;
+let evaluate = eval_d ;;
