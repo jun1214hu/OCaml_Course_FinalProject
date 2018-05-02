@@ -49,8 +49,8 @@ module Env : Env_type =
 
     (* Looks up the value of a variable in the environment *)
     let lookup (env : env) (varname : varid) : value = 
-      Let (vid, vref) = List.find (fun (v, _vref) -> v = varname) env
-    in !vref
+      let (_vid, vref) = List.find (fun (v, _vref) -> v = varname) env
+      in !vref
     (* Returns a new environment just like env except that it maps the
        variable varid to loc *)
     let extend (env : env) (varname : varid) (loc : value ref) : env =
