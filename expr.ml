@@ -80,7 +80,7 @@ let rec free_vars (exp : expr) : varidset =
                              (SS.union(free_vars i) (free_vars t))
   (* Whatever variable is not defined *)
   | Fun (v, e) -> SS.diff (free_vars e) (SS.singleton v)
-  (* Combine variables in e1 and e2 and add in the extra v*)
+  (* Variables not defined in e2 and e1*)
   | Let (v, e1, e2) -> SS.union (free_vars e1) (SS.diff (free_vars e2) (SS.singleton v))
   (* Combine variables in e1 and e2 and add in the extra v*)
   | Letrec (v, e1, e2) -> SS.diff (SS.union (free_vars e1)(free_vars e2)) (SS.singleton v)
@@ -108,16 +108,19 @@ let new_varname () : varid =
 (* subst : varid -> expr -> expr -> expr
    Substitute repl for *free* occurrences of var_name in exp *)
 
-   (* HAVE TO TEST THIS OUT *)
 let rec subst (var_name : varid) (repl : expr) (exp : expr) : expr =
   match exp with
+  (* no need to replace non-variables *)
   | Num _ | Bool _ | Raise | Unassigned -> exp
+  (* if the criteria fits, then replace the expression *)
   | Var v -> if v = var_name then repl else exp
+  (* every expression must be checked for the variable *)
   | Unop (u, e) -> Unop (u, subst var_name repl e)
   | Binop (b, e1, e2) -> 
     Binop (b, subst var_name repl e1, subst var_name repl e2)
   | Conditional (i, t, e) -> Conditional (subst var_name repl i,
                              subst var_name repl t, subst var_name repl e)
+  (* only replace the expression if the function is not the variable name *)
   | Fun (v, e) -> if v = var_name then exp
                   else Fun (v, subst var_name repl e)
   | Let (v, e1, e2) -> if v = var_name then 
